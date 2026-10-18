@@ -1,0 +1,14 @@
+{
+  "_info": "Tiempos del video Saltarina a 30 fps. 'voice' = [inicio, fin] en segundos dentro de public/saltarina/voz.wav; 'lead' = cuadros desde el inicio de la escena hasta que empieza la voz. Los demás valores son cuadros locales de la escena. Lo usan Saltarina.tsx y scripts/saltarina-music.py.",
+  "fps": 30,
+  "scenes": [
+    {"id": "titulo", "dur": 120, "jump": 22},
+    {"id": "hola", "dur": 264, "voice": [0.29, 8.09], "lead": 10, "caption2": 149},
+    {"id": "ojos", "dur": 200, "voice": [9.18, 14.21], "lead": 15, "caption2": 62},
+    {"id": "saltos", "dur": 200, "voice": [15.23, 20.52], "lead": 10, "jumps": [77, 96, 121], "jumpDur": 16},
+    {"id": "hilo", "dur": 200, "voice": [21.21, 25.90], "lead": 10, "drop": 90, "caption2": 104},
+    {"id": "mosca", "dur": 210, "voice": [27.40, 32.76], "lead": 10, "pounce": 81, "caption3": 133},
+    {"id": "foto", "dur": 160, "voice": [34.12, 36.36], "lead": 30},
+    {"id": "chao", "dur": 220, "voice": [37.38, 42.52], "lead": 10, "caption2": 128, "jump": 170}
+  ]
+}

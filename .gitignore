@@ -37,8 +37,9 @@ dist/
 # Whisper.cpp (binario y modelos descargados por scripts/transcribe.ts)
 whisper.cpp/
 
-# Foto personal usada en el video Saltarina (no se publica en el repositorio)
+# Foto y voz personales del video Saltarina (no se publican en el repositorio)
 public/saltarina/arana.jpg
+public/saltarina/voz.wav
 
 # Material del usuario y resultados del pipeline de edición (se generan en cada máquina)
 public/assets/*

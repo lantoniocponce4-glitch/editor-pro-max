@@ -15,12 +15,45 @@ import {
 } from "remotion";
 
 /**
- * "Saltarina, la arañita saltadora" — video infantil (1920x1080, 30 fps, 56 s).
+ * "Saltarina, la arañita saltadora" — video infantil narrado (1920x1080, 30 fps).
+ * Tiempos en saltarina-timing.json; narración en public/saltarina/voz.wav.
  * Personaje ilustrado inspirado en una foto real de araña saltadora (public/saltarina/arana.jpg).
  * Música: public/saltarina/musica.mp3 (scripts/saltarina-music.py).
  */
 
-export const SALTARINA_DURATION = 1680;
+import TIMING from "./saltarina-timing.json";
+
+type SceneTiming = {
+  id: string;
+  dur: number;
+  voice?: number[];
+  lead?: number;
+  caption2?: number;
+  caption3?: number;
+  jump?: number;
+  jumps?: number[];
+  jumpDur?: number;
+  drop?: number;
+  pounce?: number;
+};
+
+/** Escenas con su cuadro de inicio absoluto (encadenadas según saltarina-timing.json). */
+const SCENES: (SceneTiming & {start: number})[] = (() => {
+  let start = 0;
+  return (TIMING.scenes as SceneTiming[]).map((sc) => {
+    const r = {...sc, start};
+    start += sc.dur;
+    return r;
+  });
+})();
+
+const sceneT = (id: string) => {
+  const sc = SCENES.find((x) => x.id === id);
+  if (!sc) throw new Error(`Escena desconocida: ${id}`);
+  return {...sc, lead: sc.lead ?? 0};
+};
+
+export const SALTARINA_DURATION = SCENES.reduce((sum, sc) => sum + sc.dur, 0);
 
 const C = {
   ink: "#3b2a1f",
@@ -77,8 +110,8 @@ const jumpPos = (
 };
 
 /** Aplastar y estirar: antes de despegar, en el aire y al aterrizar. */
-const squash = (frame: number, start: number, dur: number) => {
-  const pre = interpolate(frame, [start - 8, start - 2, start], [0, 1, 0], clamp);
+const squash = (frame: number, start: number, dur: number, preFrames = 8) => {
+  const pre = preFrames > 2 ? interpolate(frame, [start - preFrames, start - 2, start], [0, 1, 0], clamp) : 0;
   const air = interpolate(frame, [start, start + 4, start + dur - 4, start + dur], [0, 1, 1, 0], clamp);
   const land = interpolate(frame, [start + dur, start + dur + 4, start + dur + 12], [0, 1, 0], clamp);
   const sx = 1 + 0.18 * pre - 0.1 * air + 0.22 * land;
@@ -324,28 +357,32 @@ const SceneTitle: React.FC = () => {
 
 const SceneHola: React.FC = () => {
   const frame = useCurrentFrame();
-  const wave = interpolate(frame, [20, 32], [0, 1], clamp) * (55 + 20 * Math.sin(frame / 4));
-  const waveOut = interpolate(frame, [120, 135], [1, 0], clamp);
+  const t = sceneT("hola");
+  const wave = interpolate(frame, [12, 22], [0, 1], clamp) * (55 + 20 * Math.sin(frame / 4));
+  const waveOut = interpolate(frame, [70, 85], [1, 0], clamp);
   return (
     <FadeIn>
       <Stage>
-        <Garden frame={frame + 150} />
-        <Spider x={960} y={1000} scale={1.75} wave={wave * waveOut} blink={blinkAt(frame, [70, 150])} bob={Math.sin(frame / 7) * 5} />
+        <Garden frame={frame + t.start} />
+        <Spider x={960} y={1000} scale={1.75} wave={wave * waveOut} blink={blinkAt(frame, [110, 200])} bob={Math.sin(frame / 7) * 5} />
       </Stage>
-      <Caption text="¡Hola! Soy Saltarina." start={6} />
-      <Caption text="Soy una araña saltadora." at="bottom" start={70} size={60} />
+      <Caption text="¡Hola! Soy Saltarina, la arañita saltadora." start={t.lead} end={t.caption2} size={66} />
+      <Caption text="Soy una araña saltadora y me encanta saltar." start={t.caption2!} size={66} />
     </FadeIn>
   );
 };
 
-const Badge: React.FC<{x: number; y: number; n: number; start: number; big?: boolean}> = ({x, y, n, start, big}) => {
+const Badge: React.FC<{x: number; y: number; n: number; start: number; big?: boolean; dimFrom?: number}> = ({x, y, n, start, big, dimFrom}) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const s = spring({frame: frame - start, fps, config: {damping: 10, stiffness: 200}});
   if (frame < start) return null;
   const r = big ? 46 : 36;
+  // a partir de dimFrom, los ojos chicos se apagan y los 2 grandes laten
+  const dim = dimFrom === undefined ? 1 : big ? 1 : interpolate(frame, [dimFrom, dimFrom + 10], [1, 0.25], clamp);
+  const pulse = dimFrom !== undefined && big && frame > dimFrom ? 1 + 0.12 * Math.sin((frame - dimFrom) / 4) : 1;
   return (
-    <g transform={`translate(${x},${y}) scale(${s})`}>
+    <g transform={`translate(${x},${y}) scale(${s * pulse})`} opacity={dim}>
       <circle r={r} fill="#ffd34d" stroke={C.ink} strokeWidth={6} />
       <text y={r * 0.36} textAnchor="middle" fontFamily={FONT} fontWeight={700} fontSize={r * 1.1} fill={C.ink}>
         {n}
@@ -356,76 +393,83 @@ const Badge: React.FC<{x: number; y: number; n: number; start: number; big?: boo
 
 const SceneOjos: React.FC = () => {
   const frame = useCurrentFrame();
+  const t = sceneT("ojos");
   const S = 3.0;
   const gx = 960;
   const gy = 650 + 125 * S;
   const to = (lx: number, ly: number): [number, number] => [gx + (lx - 200) * S, gy + (ly - 340) * S];
   const front: [number, number][] = [to(163, 218), to(237, 218), to(117, 206), to(283, 206)];
   const top: [number, number][] = [to(150, 168), to(250, 168), to(124, 186), to(276, 186)];
-  const look = Math.sin(frame / 22) * interpolate(frame, [170, 190], [0, 1], clamp);
+  const look = Math.sin(frame / 22) * interpolate(frame, [150, 170], [0, 1], clamp);
+  const c2 = t.caption2!;
   return (
     <FadeIn>
       <Stage>
-        <Garden frame={frame + 330} ground={false} />
-        <Spider x={gx} y={gy} scale={S} blink={blinkAt(frame, [150])} look={look} />
+        <Garden frame={frame + t.start} ground={false} />
+        <Spider x={gx} y={gy} scale={S} blink={blinkAt(frame, [175])} look={look} />
         {top.map(([x, y], i) => (
-          <circle key={i} cx={x} cy={y} r={14} fill="#15110e" opacity={interpolate(frame, [100 + i * 8, 106 + i * 8], [0, 1], clamp)} />
+          <circle key={i} cx={x} cy={y} r={14} fill="#15110e" opacity={interpolate(frame, [t.lead + 20 + i * 5, t.lead + 25 + i * 5], [0, 1], clamp)} />
         ))}
         {front.map(([x, y], i) => (
-          <Badge key={i} x={x + (i < 2 ? 0 : i === 2 ? -70 : 70)} y={y - (i < 2 ? 140 : 90)} n={i + 1} start={30 + i * 14} big={i < 2} />
+          <Badge key={i} x={x + (i < 2 ? 0 : i === 2 ? -70 : 70)} y={y - (i < 2 ? 140 : 90)} n={i + 1} start={t.lead + i * 5} big={i < 2} dimFrom={c2} />
         ))}
         {top.map(([x, y], i) => (
-          <Badge key={`t${i}`} x={x + (i % 2 ? 1 : -1) * (i < 2 ? 70 : 190)} y={y - (i < 2 ? 150 : 230)} n={i + 5} start={100 + i * 8} />
+          <Badge key={`t${i}`} x={x + (i % 2 ? 1 : -1) * (i < 2 ? 70 : 190)} y={y - (i < 2 ? 150 : 230)} n={i + 5} start={t.lead + 20 + i * 5} dimFrom={c2} />
         ))}
       </Stage>
-      <Caption text="¡Tengo 8 ojos!" at="bottom" start={6} end={160} />
-      <Sequence from={160} layout="none">
-        <AbsoluteFill style={{background: "transparent"}}>
-          <Caption text="Los 2 grandes de adelante ven muy, muy bien." at="bottom" size={64} />
-        </AbsoluteFill>
-      </Sequence>
+      <Caption text="¡Tengo 8 ojos!" at="bottom" start={t.lead} end={c2} />
+      <Caption text="Los 2 grandes de adelante ven muy, muy bien." at="bottom" start={c2} size={64} />
     </FadeIn>
   );
 };
 
-/** Saltos de hoja en hoja: [inicio, duración, desde, hasta, altura] */
-const LEAPS: [number, number, [number, number], [number, number], number][] = [
-  [40, 30, [250, 930], [720, 752], 260],
-  [100, 30, [720, 752], [1180, 612], 240],
-  [160, 32, [1180, 612], [1650, 792], 260],
+/** Hojas de la escena de saltos: [desde, hasta, altura]. Cada salto aterriza justo cuando se dice "uno", "dos", "tres". */
+const LEAP_PATHS: [[number, number], [number, number], number][] = [
+  [[250, 930], [720, 752], 230],
+  [[720, 752], [1180, 612], 210],
+  [[1180, 612], [1650, 792], 230],
 ];
 
 const SceneSaltos: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
-  let pos: {x: number; y: number} = {x: LEAPS[0][2][0], y: LEAPS[0][2][1]};
+  const t = sceneT("saltos");
+  const d = t.jumpDur!;
+  const starts = t.jumps!;
+  let pos: {x: number; y: number} = {x: LEAP_PATHS[0][0][0], y: LEAP_PATHS[0][0][1]};
   let sq = {sx: 1, sy: 1};
   let rot = 0;
   const lines: React.ReactNode[] = [];
-  for (const [s, d, from, to, h] of LEAPS) {
-    if (frame >= s - 8) {
+  starts.forEach((s, i) => {
+    const prevEnd = i === 0 ? -Infinity : starts[i - 1] + d;
+    const pre = Math.max(0, Math.min(8, s - prevEnd));
+    const [from, to, h] = LEAP_PATHS[i];
+    if (frame >= s - pre) {
       const j = jumpPos(frame, s, d, from, to, h);
       pos = j;
-      sq = squash(frame, s, d);
+      sq = squash(frame, s, d, pre);
       rot = j.airborne ? (j.t - 0.5) * 24 : 0;
-      if (frame >= s) {
-        const fade = interpolate(frame, [s + d, s + d + 40], [0.9, 0], clamp);
-        lines.push(<line key={s} x1={from[0]} y1={from[1] - 30} x2={j.x} y2={j.y - 30} stroke={C.silk} strokeWidth={3} opacity={fade} />);
-      }
     }
-  }
+    if (frame >= s) {
+      const j = jumpPos(frame, s, d, from, to, h);
+      const fade = interpolate(frame, [s + d, s + d + 40], [0.9, 0], clamp);
+      lines.push(<line key={s} x1={from[0]} y1={from[1] - 30} x2={j.x} y2={j.y - 30} stroke={C.silk} strokeWidth={3} opacity={fade} />);
+    }
+  });
   return (
     <FadeIn>
       <Stage>
-        <Garden frame={frame + 570} />
+        <Garden frame={frame + t.start} />
         <Leaf x={720} y={752} />
         <Leaf x={1180} y={612} flip />
         <Leaf x={1650} y={792} />
         {lines}
-        <Spider x={pos.x} y={pos.y} scale={0.85} sx={sq.sx} sy={sq.sy} rotate={rot} blink={blinkAt(frame, [20, 230])} bob={frame > 200 ? Math.sin(frame / 6) * 3 : 0} />
-        {LEAPS.map(([s, d, , to], i) => {
-          const sp = spring({frame: frame - s - d, fps, config: {damping: 9, stiffness: 200}});
-          if (frame < s + d) return null;
+        <Spider x={pos.x} y={pos.y} scale={0.85} sx={sq.sx} sy={sq.sy} rotate={rot} blink={blinkAt(frame, [30, 175])} bob={frame > starts[2] + d + 10 ? Math.sin(frame / 6) * 3 : 0} />
+        {starts.map((s, i) => {
+          const land = s + d;
+          const to = LEAP_PATHS[i][1];
+          const sp = spring({frame: frame - land, fps, config: {damping: 9, stiffness: 200}});
+          if (frame < land) return null;
           return (
             <text key={i} x={to[0]} y={to[1] - 320} textAnchor="middle" fontFamily={FONT} fontWeight={700} fontSize={110} fill="#ff6fa5" stroke={C.ink} strokeWidth={8} paintOrder="stroke" transform={`translate(${to[0]},${to[1] - 350}) scale(${sp}) translate(${-to[0]},${-(to[1] - 350)})`}>
               ¡{i + 1}!
@@ -433,17 +477,19 @@ const SceneSaltos: React.FC = () => {
           );
         })}
       </Stage>
-      <Caption text="¡Salto muy, muy lejos!" start={6} />
+      <Caption text="¡Salto muy, muy lejos!" start={t.lead} />
     </FadeIn>
   );
 };
 
 const SceneHilo: React.FC = () => {
   const frame = useCurrentFrame();
+  const t = sceneT("hilo");
+  const d0 = t.drop!;
   const anchor = {x: 960, y: 150};
-  const drop = interpolate(frame, [22, 58], [0, 1], {...clamp, easing: Easing.out(Easing.back(1.6))});
+  const drop = interpolate(frame, [d0, d0 + 36], [0, 1], {...clamp, easing: Easing.out(Easing.back(1.6))});
   const len = 90 + drop * 300;
-  const swing = frame > 58 ? 14 * Math.sin((frame - 58) / 9) * Math.exp(-(frame - 58) / 120) : 0;
+  const swing = frame > d0 + 36 ? 14 * Math.sin((frame - d0 - 36) / 9) * Math.exp(-(frame - d0 - 36) / 120) : 0;
   const rad = (swing * Math.PI) / 180;
   const bx = anchor.x + Math.sin(rad) * len;
   const by = anchor.y + Math.cos(rad) * len;
@@ -453,19 +499,15 @@ const SceneHilo: React.FC = () => {
   return (
     <FadeIn>
       <Stage>
-        <Garden frame={frame + 840} />
+        <Garden frame={frame + t.start} />
         <path d="M-20,120 Q600,95 1100,150 L1100,170 Q600,118 -20,145 Z" fill="#8a5a36" />
         <line x1={anchor.x} y1={anchor.y} x2={bx} y2={by} stroke={C.silk} strokeWidth={4} />
         <g transform={`rotate(${swing} ${bx} ${by})`}>
-          <Spider x={bx} y={gy} scale={S} blink={blinkAt(frame, [110])} wave={frame > 120 ? 40 + 15 * Math.sin(frame / 4) : 0} />
+          <Spider x={bx} y={gy} scale={S} blink={blinkAt(frame, [40, 150])} wave={frame > 150 ? 40 + 15 * Math.sin(frame / 4) : 0} />
         </g>
       </Stage>
-      <Caption text="Antes de saltar, pego un hilo de seda." at="bottom" start={6} end={110} size={64} />
-      <Sequence from={110} layout="none">
-        <AbsoluteFill>
-          <Caption text="¡Es mi cuerda de seguridad!" at="bottom" />
-        </AbsoluteFill>
-      </Sequence>
+      <Caption text="Antes de saltar, pego un hilo de seda." at="bottom" start={t.lead} end={t.caption2} size={64} />
+      <Caption text="¡Es mi cuerda de seguridad!" at="bottom" start={t.caption2!} />
     </FadeIn>
   );
 };
@@ -485,7 +527,8 @@ const Fly: React.FC<{x: number; y: number; frame: number}> = ({x, y, frame}) => 
 
 const SceneMosca: React.FC = () => {
   const frame = useCurrentFrame();
-  const pounce = 120;
+  const t = sceneT("mosca");
+  const pounce = t.pounce!;
   const flyEscape = interpolate(frame, [pounce + 12, pounce + 40], [0, 1], {...clamp, easing: Easing.in(Easing.quad)});
   const fx = 1260 + Math.sin(frame / 11) * 140 + flyEscape * 520;
   const fy = 560 + Math.cos(frame / 7) * 60 - flyEscape * 640;
@@ -496,21 +539,13 @@ const SceneMosca: React.FC = () => {
   return (
     <FadeIn>
       <Stage>
-        <Garden frame={frame + 1050} />
-        <Spider x={j.x} y={j.y} scale={1.0} sx={sq.sx} sy={sq.sy} rotate={(j.airborne ? (j.t - 0.5) * 26 : 0) + dizzy} look={look} blink={blinkAt(frame, [60, 175])} />
+        <Garden frame={frame + t.start} />
+        <Spider x={j.x} y={j.y} scale={1.0} sx={sq.sx} sy={sq.sy} rotate={(j.airborne ? (j.t - 0.5) * 26 : 0) + dizzy} look={look} blink={blinkAt(frame, [45, 190])} />
         <Fly x={fx} y={fy} frame={frame} />
       </Stage>
-      <Caption text="No hago telarañas para cazar..." start={6} end={95} size={66} />
-      <Sequence from={95} layout="none">
-        <AbsoluteFill>
-          <Caption text="¡Yo salto!" />
-        </AbsoluteFill>
-      </Sequence>
-      <Sequence from={165} layout="none">
-        <AbsoluteFill>
-          <Caption text="¡Uy, se escapó!" at="bottom" />
-        </AbsoluteFill>
-      </Sequence>
+      <Caption text="No hago telarañas para cazar..." start={t.lead} end={pounce} size={66} />
+      <Caption text="¡Yo salto!" start={pounce} />
+      <Caption text="¡Uy, se escapó!" at="bottom" start={t.caption3!} />
     </FadeIn>
   );
 };
@@ -518,14 +553,15 @@ const SceneMosca: React.FC = () => {
 const SceneFoto: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
+  const t = sceneT("foto");
   const s = spring({frame: frame - 6, fps, config: {damping: 13, stiffness: 120}});
-  const zoom = interpolate(frame, [0, 240], [1.05, 1.3], clamp);
-  const peek = spring({frame: frame - 60, fps, config: {damping: 12}});
+  const zoom = interpolate(frame, [0, t.dur], [1.05, 1.3], clamp);
+  const peek = spring({frame: frame - 50, fps, config: {damping: 12}});
   return (
     <FadeIn>
       <Stage>
-        <Garden frame={frame + 1260} />
-        <Spider x={1700} y={1080 + 210 - 230 * peek} scale={0.9} wave={frame > 80 ? 45 + 18 * Math.sin(frame / 4) : 0} blink={blinkAt(frame, [140])} look={-0.8} />
+        <Garden frame={frame + t.start} />
+        <Spider x={1700} y={1080 + 210 - 230 * peek} scale={0.9} wave={frame > 70 ? 45 + 18 * Math.sin(frame / 4) : 0} blink={blinkAt(frame, [120])} look={-0.8} />
       </Stage>
       <AbsoluteFill style={{flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 90, paddingBottom: 40}}>
         <div
@@ -559,8 +595,8 @@ const SceneFoto: React.FC = () => {
             boxShadow: `0 10px 0 ${C.ink}`,
             borderRadius: 48,
             padding: "36px 48px",
-            opacity: interpolate(frame, [30, 44], [0, 1], clamp),
-            transform: `translateX(${interpolate(frame, [30, 44], [60, 0], clamp)}px)`,
+            opacity: interpolate(frame, [t.lead, t.lead + 14], [0, 1], clamp),
+            transform: `translateX(${interpolate(frame, [t.lead, t.lead + 14], [60, 0], clamp)}px)`,
           }}
         >
           Así se ve una arañita saltadora de verdad.
@@ -572,47 +608,59 @@ const SceneFoto: React.FC = () => {
 
 const SceneChao: React.FC = () => {
   const frame = useCurrentFrame();
-  const j = jumpPos(frame, 132, 32, [960, 980], [2250, 760], 380);
-  const sq = squash(frame, 132, 32);
-  const wave = frame > 92 && frame < 130 ? 50 + 20 * Math.sin(frame / 4) : 0;
+  const t = sceneT("chao");
+  const jf = t.jump!;
+  const c2 = t.caption2!;
+  const j = jumpPos(frame, jf, 32, [960, 980], [2250, 760], 380);
+  const sq = squash(frame, jf, 32);
+  const wave = frame > c2 - 8 && frame < jf - 2 ? 50 + 20 * Math.sin(frame / 4) : 0;
   return (
     <FadeIn>
       <Stage>
-        <Garden frame={frame + 1500} />
-        <Spider x={j.x} y={j.y} scale={1.5} sx={sq.sx} sy={sq.sy} rotate={j.airborne ? (j.t - 0.5) * 30 : 0} wave={wave} blink={blinkAt(frame, [50])} bob={j.t <= 0 ? Math.sin(frame / 7) * 4 : 0} />
+        <Garden frame={frame + t.start} />
+        <Spider x={j.x} y={j.y} scale={1.5} sx={sq.sx} sy={sq.sy} rotate={j.airborne ? (j.t - 0.5) * 30 : 0} wave={wave} blink={blinkAt(frame, [60])} bob={j.t <= 0 ? Math.sin(frame / 7) * 4 : 0} />
       </Stage>
-      <Caption text="Si ves una, mírala con cariño y déjala saltar." start={6} size={64} />
-      <Sequence from={90} layout="none">
-        <AbsoluteFill>
-          <Caption text="¡Chao, amiguitos!" at="bottom" size={90} />
-        </AbsoluteFill>
-      </Sequence>
+      <Caption text="Si ves una, mírala con cariño y déjala saltar." start={t.lead} size={64} />
+      <Caption text="¡Chao, amiguitos!" at="bottom" start={c2} size={90} />
     </FadeIn>
   );
 };
 
 /* ---------- línea de tiempo ---------- */
-const SCENES: [number, number, React.FC][] = [
-  [0, 150, SceneTitle],
-  [150, 180, SceneHola],
-  [330, 240, SceneOjos],
-  [570, 270, SceneSaltos],
-  [840, 210, SceneHilo],
-  [1050, 210, SceneMosca],
-  [1260, 240, SceneFoto],
-  [1500, 180, SceneChao],
-];
+const COMPONENTS: Record<string, React.FC> = {
+  titulo: SceneTitle,
+  hola: SceneHola,
+  ojos: SceneOjos,
+  saltos: SceneSaltos,
+  hilo: SceneHilo,
+  mosca: SceneMosca,
+  foto: SceneFoto,
+  chao: SceneChao,
+};
 
-export const Saltarina: React.FC<{music?: boolean}> = ({music = true}) => {
+export const Saltarina: React.FC<{music?: boolean; voice?: boolean}> = ({music = true, voice = true}) => {
   useFredoka();
+  const {fps} = useVideoConfig();
   return (
     <AbsoluteFill style={{background: "#a8e0ff"}}>
-      {SCENES.map(([from, dur, Comp]) => (
-        <Sequence key={from} from={from} durationInFrames={dur}>
-          <Comp />
-        </Sequence>
-      ))}
-      {music && <Audio src={staticFile("saltarina/musica.mp3")} volume={1} />}
+      {SCENES.map((sc) => {
+        const Comp = COMPONENTS[sc.id];
+        return (
+          <Sequence key={sc.id} from={sc.start} durationInFrames={sc.dur}>
+            <Comp />
+            {voice && sc.voice && (
+              <Sequence from={sc.lead ?? 0} layout="none">
+                <Audio
+                  src={staticFile("saltarina/voz.wav")}
+                  trimBefore={Math.round(sc.voice[0] * fps)}
+                  trimAfter={Math.round((sc.voice[1] + 0.15) * fps)}
+                />
+              </Sequence>
+            )}
+          </Sequence>
+        );
+      })}
+      {music && <Audio src={staticFile("saltarina/musica.mp3")} />}
     </AbsoluteFill>
   );
 };
