@@ -39,3 +39,10 @@ whisper.cpp/
 
 # Foto personal usada en el video Saltarina (no se publica en el repositorio)
 public/saltarina/arana.jpg
+
+# Material del usuario y resultados del pipeline de edición (se generan en cada máquina)
+public/assets/*
+!public/assets/.gitkeep
+public/captions.json
+public/silence.json
+public/video-metadata.json
