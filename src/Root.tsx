@@ -2,6 +2,7 @@ import {Composition, Folder} from "remotion";
 
 // Compositions
 import {ShowcaseComposition} from "./compositions/Showcase";
+import {Saltarina, SALTARINA_DURATION} from "./compositions/Saltarina";
 
 // Social templates
 import {TikTokVideo} from "./templates/social/TikTokVideo";
@@ -24,6 +25,15 @@ export const RemotionRoot: React.FC = () => {
   return (
     <>
       <Folder name="Examples">
+        <Composition
+          id="Saltarina"
+          component={Saltarina}
+          durationInFrames={SALTARINA_DURATION}
+          fps={30}
+          width={1920}
+          height={1080}
+          defaultProps={{music: true}}
+        />
         <Composition
           id="Showcase"
           component={ShowcaseComposition}
