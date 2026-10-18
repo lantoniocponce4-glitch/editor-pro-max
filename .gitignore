@@ -47,3 +47,6 @@ public/assets/*
 public/captions.json
 public/silence.json
 public/video-metadata.json
+
+# Foto personal del video de cumpleaños (no se publica)
+public/cumpleanos/foto.jpg
