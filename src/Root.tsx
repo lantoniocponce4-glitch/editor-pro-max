@@ -40,6 +40,7 @@ export const RemotionRoot: React.FC = () => {
             fotoSize: [1512, 2016] as [number, number],
             fotoCarino: [170, 760, 600, 640] as [number, number, number, number],
             music: true,
+            bruno3d: true,
           }}
         />
         <Composition

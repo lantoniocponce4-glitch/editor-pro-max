@@ -13,6 +13,7 @@ import {
   useVideoConfig,
   Easing,
 } from "remotion";
+import {Bruno3DLayer} from "../components/characters/Bruno3D";
 
 /**
  * Video de cumpleaños vertical (1080x1920, 30 fps, 32 s) presentado por la mascota.
@@ -32,6 +33,8 @@ export type CumpleanosProps = {
   /** Zona de la foto para la escena de cariño: [x, y, ancho, alto] en píxeles */
   fotoCarino: [number, number, number, number];
   music?: boolean;
+  /** Bruno en 3D estilo anime (true) o plano en 2D (false, renderiza más rápido) */
+  bruno3d?: boolean;
 };
 
 const C = {
@@ -162,6 +165,19 @@ const Cat: React.FC<CatProps> = ({x, y, scale = 1, blink = 0, tail = 0, tilt = 0
         )}
       </g>
     </g>
+  );
+};
+
+const Use3D = React.createContext(true);
+
+/** Dibuja a Bruno en 3D (capa propia) o en 2D (dentro del SVG de la escena). */
+const BrunoLayer: React.FC<CatProps & {turn?: number}> = ({turn, ...p}) => {
+  const use3d = React.useContext(Use3D);
+  if (use3d) return <Bruno3DLayer width={1080} height={1920} {...p} turn={turn} />;
+  return (
+    <svg viewBox="0 0 1080 1920" width={1080} height={1920} style={{position: "absolute", inset: 0}}>
+      <Cat {...p} />
+    </svg>
   );
 };
 
@@ -384,8 +400,8 @@ const SceneBruno: React.FC<{mascota: string; nombre: string}> = ({mascota}) => {
     <FadeIn>
       <Stage>
         <Patio frame={frame} />
-        <Cat x={walk} y={1720} scale={1.25} bob={walking ? -Math.abs(Math.sin(frame / 3)) * 18 : 0} tail={Math.sin(frame / 6) * 10} blink={blinkAt(frame, [80, 130])} tilt={frame > 60 ? Math.sin(frame / 14) * 6 : 0} />
       </Stage>
+      <BrunoLayer x={walk} y={1720} scale={1.25} bob={walking ? -Math.abs(Math.sin(frame / 3)) * 18 : 0} tail={Math.sin(frame / 6) * 10} blink={blinkAt(frame, [80, 130])} tilt={frame > 60 ? Math.sin(frame / 14) * 6 : 0} turn={walking ? 35 : interpolate(frame, [45, 60], [35, 0], clamp) + Math.sin(frame / 25) * 10} />
       <Bubble text={`¡Hola! Soy ${mascota}.`} start={50} end={95} y={1000} size={72} />
       <Bubble text="Hoy es un día muy especial..." start={95} y={1000} size={66} />
     </FadeIn>
@@ -471,7 +487,9 @@ const SceneRegalos: React.FC = () => {
     <FadeIn>
       <Stage>
         <Patio frame={frame} />
-        <Cat x={500} y={1700} scale={0.95} tail={Math.sin(frame / 5) * 14} blink={blinkAt(frame, [40, 140])} tilt={Math.sin(frame / 12) * 5} look={Math.sin(frame / 20)} />
+      </Stage>
+      <BrunoLayer x={500} y={1700} scale={0.95} tail={Math.sin(frame / 5) * 14} blink={blinkAt(frame, [40, 140])} tilt={Math.sin(frame / 12) * 5} look={Math.sin(frame / 20)} turn={Math.sin(frame / 18) * 18} />
+      <Stage>
         <Gift kind="globo" x={150} y={1520} start={20} frame={frame} />
         <Gift kind="oso" x={170} y={1840} start={34} frame={frame} />
         <Gift kind="canasta" x={890} y={1850} start={48} frame={frame} />
@@ -547,8 +565,8 @@ const SceneFinal: React.FC<{nombre: string; mascota: string}> = ({nombre, mascot
         <NightBg frame={frame} />
         <Confetti frame={frame} count={60} />
         <Cake x={380} y={1540} frame={frame} />
-        <Cat x={820} y={1640} scale={0.85} hat tail={Math.sin(frame / 5) * 14} happy={frame > 40 && frame < 70} blink={blinkAt(frame, [120])} tilt={-6 + Math.sin(frame / 10) * 5} />
       </Stage>
+      <BrunoLayer x={820} y={1640} scale={0.85} hat tail={Math.sin(frame / 5) * 14} happy={frame > 40 && frame < 70} blink={blinkAt(frame, [120])} tilt={-6 + Math.sin(frame / 10) * 5} turn={-20 + Math.sin(frame / 20) * 8} />
       <Banner text={`¡Que cumplas muchos más, ${nombre}!`} start={8} size={80} />
       <AbsoluteFill style={{alignItems: "center", justifyContent: "flex-start", paddingTop: 640}}>
         <div style={{fontFamily: FONT, fontWeight: 600, fontSize: 64, color: "#ffffff", opacity: sig, transform: `scale(${0.7 + 0.3 * sig})`, display: "flex", alignItems: "center", gap: 20}}>
@@ -566,9 +584,10 @@ const SceneFinal: React.FC<{nombre: string; mascota: string}> = ({nombre, mascot
 };
 
 /* ---------- línea de tiempo ---------- */
-export const Cumpleanos: React.FC<CumpleanosProps> = ({nombre, mascota, foto, fotoSize, fotoCarino, music = true}) => {
+export const Cumpleanos: React.FC<CumpleanosProps> = ({nombre, mascota, foto, fotoSize, fotoCarino, music = true, bruno3d = true}) => {
   useFredoka();
   return (
+    <Use3D.Provider value={bruno3d}>
     <AbsoluteFill style={{background: C.night1}}>
       <Sequence from={0} durationInFrames={120}>
         <SceneTitulo nombre={nombre} />
@@ -590,5 +609,6 @@ export const Cumpleanos: React.FC<CumpleanosProps> = ({nombre, mascota, foto, fo
       </Sequence>
       {music && <Audio src={staticFile("cumpleanos/musica.mp3")} />}
     </AbsoluteFill>
+    </Use3D.Provider>
   );
 };
