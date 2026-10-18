@@ -14,6 +14,8 @@ import {
   type TikTokPage,
 } from "@remotion/captions";
 import {FONT_FAMILIES, loadGoogleFont} from "../../presets/fonts";
+import type {Segment} from "../media/JumpCut";
+import {remapCaptionsToCuts} from "../../utils/editing";
 
 export type CaptionPreset = "classic" | "bold" | "outline" | "glow" | "box";
 
@@ -27,6 +29,8 @@ export interface CaptionOverlayProps {
   textColor?: string;
   combineTokensWithinMs?: number;
   offsetMs?: number;
+  /** Speech segments kept by a JumpCut (paddingSeconds=0); remaps caption times onto the cut timeline */
+  cutSegments?: Segment[];
   style?: React.CSSProperties;
 }
 
@@ -78,6 +82,7 @@ export const CaptionOverlay: React.FC<CaptionOverlayProps> = ({
   textColor = "#ffffff",
   combineTokensWithinMs = 1200,
   offsetMs = 0,
+  cutSegments,
   style,
 }) => {
   const [captions, setCaptions] = useState<Caption[] | null>(null);
@@ -105,14 +110,21 @@ export const CaptionOverlay: React.FC<CaptionOverlayProps> = ({
       .catch((e) => cancelRender(e));
   }, [captionsSource, offsetMs, handle]);
 
+  const timedCaptions = useMemo(() => {
+    if (!captions) return null;
+    return cutSegments && cutSegments.length > 0
+      ? remapCaptionsToCuts(captions, cutSegments, fps)
+      : captions;
+  }, [captions, cutSegments, fps]);
+
   const pages = useMemo(() => {
-    if (!captions) return [];
+    if (!timedCaptions) return [];
     const result = createTikTokStyleCaptions({
-      captions,
+      captions: timedCaptions,
       combineTokensWithinMilliseconds: combineTokensWithinMs,
     });
     return result.pages;
-  }, [captions, combineTokensWithinMs]);
+  }, [timedCaptions, combineTokensWithinMs]);
 
   if (!captions) return null;
 
@@ -146,7 +158,7 @@ export const CaptionOverlay: React.FC<CaptionOverlayProps> = ({
         if (duration <= 0) return null;
 
         return (
-          <Sequence key={index} from={startFrame} durationInFrames={duration}>
+          <Sequence key={index} from={startFrame} durationInFrames={duration} layout="none">
             <CaptionPage
               page={page}
               fontSize={fontSize}
@@ -204,7 +216,7 @@ const CaptionPage: React.FC<CaptionPageProps> = ({
           fontFamily,
           fontWeight: 800,
           lineHeight: 1.3,
-          whiteSpace: "pre",
+          whiteSpace: "pre-wrap",
         }}
       >
         {page.tokens.map((token, i) => {

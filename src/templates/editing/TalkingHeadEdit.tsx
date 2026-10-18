@@ -1,7 +1,7 @@
 import React from "react";
-import {AbsoluteFill, Sequence, staticFile} from "remotion";
+import {AbsoluteFill, Sequence, staticFile, type CalculateMetadataFunction} from "remotion";
 import {VideoClip} from "../../components/media/VideoClip";
-import {JumpCut} from "../../components/media/JumpCut";
+import {JumpCut, calculateJumpCutDuration, type Segment} from "../../components/media/JumpCut";
 import {CaptionOverlay, type CaptionPreset} from "../../components/text/CaptionOverlay";
 import {AnimatedTitle} from "../../components/text/AnimatedTitle";
 import {LowerThird} from "../../components/text/LowerThird";
@@ -14,7 +14,7 @@ import {Watermark} from "../../components/overlays/Watermark";
 import {loadDefaultFonts} from "../../presets/fonts";
 import {BRAND} from "../../presets/brand";
 
-export interface TalkingHeadEditProps {
+export type TalkingHeadEditProps = {
   videoSrc?: string;
   captionsPath?: string;
   silencePath?: string;
@@ -30,7 +30,36 @@ export interface TalkingHeadEditProps {
   backgroundMusic?: string;
   musicVolume?: number;
   accentColor?: string;
-}
+};
+
+/** Cut list used when removeSilence is on (shared by the component and calculateMetadata) */
+const buildTalkingHeadCuts = (speechSegments: Segment[]): Segment[] =>
+  mergeSegments(buildCutList(speechSegments, {paddingSeconds: 0.15}), 0.3);
+
+/**
+ * Sets the composition length to match the footage: the cut length when removeSilence
+ * is on, otherwise the full video length from video-metadata.json. Keeps the
+ * registered duration if neither file can be read.
+ */
+export const calculateTalkingHeadMetadata: CalculateMetadataFunction<TalkingHeadEditProps> = async ({props}) => {
+  const fps = 30;
+  try {
+    if (props.removeSilence && props.silencePath) {
+      const raw = await fetch(staticFile(props.silencePath)).then((r) => r.json());
+      const speech: Segment[] = (raw.speechSegments ?? []).map((x: {start?: number; end?: number; startSeconds?: number; endSeconds?: number}) => ({
+        startSeconds: x.startSeconds ?? x.start ?? 0,
+        endSeconds: x.endSeconds ?? x.end ?? 0,
+      }));
+      const frames = calculateJumpCutDuration(buildTalkingHeadCuts(speech), fps, 0);
+      if (frames > 0) return {durationInFrames: frames};
+    }
+    const meta = await fetch(staticFile("video-metadata.json")).then((r) => r.json());
+    if (meta?.duration > 0) return {durationInFrames: Math.round(meta.duration * fps)};
+  } catch {
+    // No pipeline output yet: keep the registered duration
+  }
+  return {};
+};
 
 export const TalkingHeadEdit: React.FC<TalkingHeadEditProps> = ({
   videoSrc = "assets/video.mp4",
@@ -55,10 +84,7 @@ export const TalkingHeadEdit: React.FC<TalkingHeadEditProps> = ({
 
   // Build cut list from speech segments
   const segments = silenceData
-    ? mergeSegments(
-        buildCutList(silenceData.speechSegments, {paddingSeconds: 0.15}),
-        0.3,
-      )
+    ? buildTalkingHeadCuts(silenceData.speechSegments)
     : [];
 
   const src = staticFile(videoSrc);
@@ -78,6 +104,9 @@ export const TalkingHeadEdit: React.FC<TalkingHeadEditProps> = ({
           captionsSource={captionsPath}
           preset={captionPreset}
           position="bottom"
+          cutSegments={removeSilence && segments.length > 0 ? segments : undefined}
+          // Sit above the call-to-action button, which is anchored 80px from the bottom
+          style={ctaText ? {bottom: 200} : undefined}
         />
       )}
 

@@ -1,5 +1,5 @@
 import React from "react";
-import {AbsoluteFill, Sequence, staticFile} from "remotion";
+import {AbsoluteFill, Sequence, staticFile, type CalculateMetadataFunction} from "remotion";
 import {VideoClip} from "../../components/media/VideoClip";
 import {CaptionOverlay, type CaptionPreset} from "../../components/text/CaptionOverlay";
 import {AnimatedTitle} from "../../components/text/AnimatedTitle";
@@ -9,7 +9,7 @@ import {Watermark} from "../../components/overlays/Watermark";
 import {loadDefaultFonts} from "../../presets/fonts";
 import {BRAND} from "../../presets/brand";
 
-export interface PodcastClipProps {
+export type PodcastClipProps = {
   videoSrc?: string;
   clipStartSeconds?: number;
   clipEndSeconds?: number;
@@ -18,7 +18,15 @@ export interface PodcastClipProps {
   captionPreset?: CaptionPreset;
   title?: string;
   accentColor?: string;
-}
+};
+
+/** Sets the composition length to the clip length (clipEndSeconds - clipStartSeconds). */
+export const calculatePodcastClipMetadata: CalculateMetadataFunction<PodcastClipProps> = ({props}) => {
+  const start = props.clipStartSeconds ?? 0;
+  const end = props.clipEndSeconds;
+  if (end === undefined || end <= start) return {};
+  return {durationInFrames: Math.round((end - start) * 30)};
+};
 
 export const PodcastClip: React.FC<PodcastClipProps> = ({
   videoSrc = "assets/video.mp4",

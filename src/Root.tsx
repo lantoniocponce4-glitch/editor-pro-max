@@ -17,8 +17,8 @@ import {Announcement} from "./templates/promo/Announcement";
 import {BeforeAfterDemo} from "./compositions/BeforeAfterDemo";
 
 // Editing templates
-import {TalkingHeadEdit} from "./templates/editing/TalkingHeadEdit";
-import {PodcastClip} from "./templates/editing/PodcastClip";
+import {TalkingHeadEdit, calculateTalkingHeadMetadata} from "./templates/editing/TalkingHeadEdit";
+import {PodcastClip, calculatePodcastClipMetadata} from "./templates/editing/PodcastClip";
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -136,6 +136,7 @@ export const RemotionRoot: React.FC = () => {
         <Composition
           id="TalkingHeadEdit"
           component={TalkingHeadEdit}
+          calculateMetadata={calculateTalkingHeadMetadata}
           durationInFrames={900}
           fps={30}
           width={1920}
@@ -150,6 +151,7 @@ export const RemotionRoot: React.FC = () => {
         <Composition
           id="PodcastClip"
           component={PodcastClip}
+          calculateMetadata={calculatePodcastClipMetadata}
           durationInFrames={900}
           fps={30}
           width={1080}

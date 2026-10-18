@@ -55,3 +55,37 @@ export const offsetCaptions = <T extends {startMs: number; endMs: number}>(
       endMs: c.endMs - offsetMs,
     }))
     .filter((c) => c.startMs >= 0 && c.endMs > 0);
+
+/**
+ * Move caption timestamps from the original video timeline onto a JumpCut timeline.
+ * Uses the same per-segment frame rounding as <JumpCut paddingSeconds={0}>, so captions
+ * stay in sync after silence removal. Captions that fall in a removed gap are dropped.
+ */
+export const remapCaptionsToCuts = <
+  T extends {startMs: number; endMs: number; timestampMs?: number | null},
+>(
+  captions: T[],
+  segments: Segment[],
+  fps: number,
+): T[] => {
+  let offsetFrames = 0;
+  const spans = segments.map((seg) => {
+    const frames = Math.round((seg.endSeconds - seg.startSeconds) * fps);
+    const span = {startMs: seg.startSeconds * 1000, endMs: seg.endSeconds * 1000, outMs: (offsetFrames / fps) * 1000};
+    offsetFrames += frames;
+    return span;
+  });
+  const result: T[] = [];
+  for (const c of captions) {
+    const span = spans.find((s) => c.startMs >= s.startMs && c.startMs < s.endMs);
+    if (!span) continue;
+    const shift = span.outMs - span.startMs;
+    result.push({
+      ...c,
+      startMs: c.startMs + shift,
+      endMs: Math.min(c.endMs, span.endMs) + shift,
+      ...(c.timestampMs != null ? {timestampMs: c.timestampMs + shift} : {}),
+    });
+  }
+  return result;
+};
