@@ -430,6 +430,10 @@ npx tsx scripts/transcribe.ts                                # → public/captio
 npx tsx scripts/detect-silence.ts public/assets/video.mp4   # → public/silence.json
 ```
 
+Transcription defaults to **Spanish** with the multilingual `medium` model. To change it, set env vars:
+`WHISPER_LANG=en npx tsx scripts/transcribe.ts` (any Whisper language code, or `auto`) and
+`WHISPER_MODEL=small` (smaller/faster) or `WHISPER_MODEL=large-v3-turbo` (more accurate).
+
 ### Step 3: Create composition using editing components/templates
 
 ### Step 4: Preview and render
