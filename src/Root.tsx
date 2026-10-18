@@ -6,6 +6,9 @@ import {Saltarina, SALTARINA_DURATION} from "./compositions/Saltarina";
 import {Cumpleanos, CUMPLEANOS_DURATION} from "./compositions/Cumpleanos";
 import {CumpleanosReal, CUMPLEANOS_REAL_DURATION} from "./compositions/CumpleanosReal";
 import {DramaFitLife, DRAMA_DURATION} from "./compositions/DramaFitLife";
+import {SerieEp1, EP1_DURATION} from "./compositions/serie/Ep1";
+import {SerieEp2, EP2_DURATION} from "./compositions/serie/Ep2";
+import {SerieEp3, EP3_DURATION} from "./compositions/serie/Ep3";
 
 // Social templates
 import {TikTokVideo} from "./templates/social/TikTokVideo";
@@ -28,6 +31,33 @@ export const RemotionRoot: React.FC = () => {
   return (
     <>
       <Folder name="Examples">
+        <Composition
+          id="SerieEp3"
+          component={SerieEp3}
+          durationInFrames={EP3_DURATION}
+          fps={30}
+          width={1080}
+          height={1920}
+          defaultProps={{el: "Luis", ella: "Cynia", mascota: "Bruno", music: true}}
+        />
+        <Composition
+          id="SerieEp2"
+          component={SerieEp2}
+          durationInFrames={EP2_DURATION}
+          fps={30}
+          width={1080}
+          height={1920}
+          defaultProps={{el: "Luis", ella: "Cynia", mascota: "Bruno", music: true}}
+        />
+        <Composition
+          id="SerieEp1"
+          component={SerieEp1}
+          durationInFrames={EP1_DURATION}
+          fps={30}
+          width={1080}
+          height={1920}
+          defaultProps={{el: "Luis", ella: "Cynia", mascota: "Bruno", music: true}}
+        />
         <Composition
           id="DramaFitLife"
           component={DramaFitLife}

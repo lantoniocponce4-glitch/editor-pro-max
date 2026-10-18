@@ -1,0 +1,27 @@
+{
+  "_info": "Episodio 2 'El rival peludo' (30 fps). Escenas [inicio, duración] en cuadros; cues de música para scripts/serie-music.py.",
+  "fps": 30,
+  "scenes": {
+    "apertura": [0, 180],
+    "titulo": [180, 100],
+    "llegada": [280, 200],
+    "despierta": [480, 180],
+    "camina": [660, 210],
+    "duelo": [870, 240],
+    "soborno": [1110, 240],
+    "juguete": [1350, 150],
+    "cynia": [1500, 240],
+    "fin": [1740, 120]
+  },
+  "music": [
+    {"from": 0, "to": 280, "mood": "tension"},
+    {"from": 280, "to": 480, "mood": "comic"},
+    {"from": 480, "to": 1110, "mood": "tension"},
+    {"from": 1110, "to": 1500, "mood": "comic"},
+    {"from": 1500, "to": 1740, "mood": "romance"},
+    {"from": 1740, "to": 1860, "mood": "end"}
+  ],
+  "hits": [180, 480, 660, 870, 1740],
+  "boing": [1200, 1215, 1350, 1665],
+  "heartbeats": [700, 728, 756, 784, 812]
+}

@@ -1,0 +1,25 @@
+{
+  "_info": "Episodio 1 'La mirada' (30 fps). Escenas [inicio, duración] en cuadros; cues de música para scripts/serie-music.py.",
+  "fps": 30,
+  "scenes": {
+    "apertura": [0, 120],
+    "titulo": [120, 100],
+    "luis": [220, 170],
+    "cynia": [390, 170],
+    "choque": [560, 300],
+    "momento": [860, 200],
+    "bruno": [1060, 230],
+    "fin": [1290, 120]
+  },
+  "music": [
+    {"from": 0, "to": 220, "mood": "tension"},
+    {"from": 220, "to": 560, "mood": "comic"},
+    {"from": 560, "to": 860, "mood": "comic"},
+    {"from": 860, "to": 1060, "mood": "romance"},
+    {"from": 1060, "to": 1290, "mood": "tension"},
+    {"from": 1290, "to": 1410, "mood": "end"}
+  ],
+  "hits": [120, 300, 470, 1060, 1180, 1290],
+  "boing": [636, 1215],
+  "heartbeats": [10, 38, 66, 94, 900, 928]
+}

@@ -54,3 +54,8 @@ public/cumpleanos/*.jpg
 
 # Fotos personales del mini drama (no se publican)
 public/drama/*.jpg
+
+# Recortes y fondos de la serie (fotos personales, no se publican)
+public/serie/*.png
+public/serie/*.jpg
+public/serie/*.mp4

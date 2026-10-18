@@ -1,0 +1,25 @@
+{
+  "_info": "Episodio 3 'La sorpresa' (30 fps). Escenas [inicio, duración] en cuadros; cues de música para scripts/serie-music.py.",
+  "fps": 30,
+  "scenes": {
+    "apertura": [0, 170],
+    "titulo": [170, 100],
+    "trato": [270, 180],
+    "preparativos": [450, 240],
+    "espera": [690, 150],
+    "sorpresa": [840, 240],
+    "final": [1080, 240],
+    "fin": [1320, 130]
+  },
+  "music": [
+    {"from": 0, "to": 450, "mood": "comic"},
+    {"from": 450, "to": 690, "mood": "comic"},
+    {"from": 690, "to": 840, "mood": "tension"},
+    {"from": 840, "to": 1080, "mood": "fiesta"},
+    {"from": 1080, "to": 1320, "mood": "romance"},
+    {"from": 1320, "to": 1450, "mood": "end"}
+  ],
+  "hits": [170, 840, 1320],
+  "boing": [345, 560, 1140],
+  "heartbeats": [700, 730, 760, 790, 810, 825]
+}
