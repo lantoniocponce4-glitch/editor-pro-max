@@ -2,11 +2,12 @@
 """
 Música para el video "Cumpleanos" (32 s): "Cumpleaños feliz" (melodía de dominio público)
 en estilo caja musical, dos vueltas, con destellos sincronizados con el confeti y los regalos.
-Uso: python3 scripts/cumpleanos-music.py
+Uso: python3 scripts/cumpleanos-music.py [real]   (real = versión CumpleanosReal -> musica-real.wav)
      npx remotion ffmpeg -y -i public/cumpleanos/musica.wav -b:a 128k public/cumpleanos/musica.mp3
 Requiere numpy.
 """
 import os
+import sys
 import wave
 
 import numpy as np
@@ -91,21 +92,27 @@ start = 0.35
 verse(start)
 verse(start + VERSE_BEATS * BEAT + BEAT * 0.5, harmony=True)
 
-# destellos: título, confeti de la foto, regalos y escena final
-sparkle(0.15)
-sparkle((290 + 14) / FPS, 10)
-for f in (20, 34, 48, 62):
-    sparkle((470 + f) / FPS, 4)
-sparkle((770 + 8) / FPS, 8)
+# destellos en los momentos clave de cada versión del video
+REAL = len(sys.argv) > 1 and sys.argv[1] == "real"  # CumpleanosReal (material real)
+if REAL:
+    for fr, n in ((30, 8), (329, 8), (780, 12), (891, 8)):  # título, Cynia, retrato congelado, firma
+        sparkle(fr / FPS, n)
+else:
+    sparkle(0.15)
+    sparkle((290 + 14) / FPS, 10)
+    for f in (20, 34, 48, 62):
+        sparkle((470 + f) / FPS, 4)
+    sparkle((770 + 8) / FPS, 8)
 
 fade_out = np.clip((DUR - np.arange(len(out)) / SR) / 1.5, 0, 1)
 out *= fade_out
 out /= np.max(np.abs(out)) / 0.9
 
 os.makedirs("public/cumpleanos", exist_ok=True)
-with wave.open("public/cumpleanos/musica.wav", "wb") as w:
+name = "musica-real" if REAL else "musica"
+with wave.open(f"public/cumpleanos/{name}.wav", "wb") as w:
     w.setnchannels(1)
     w.setsampwidth(2)
     w.setframerate(SR)
     w.writeframes((out * 32767).astype(np.int16).tobytes())
-print("public/cumpleanos/musica.wav listo", round(start + (2 * VERSE_BEATS + 0.5) * BEAT, 1), "s de melodía")
+print(f"public/cumpleanos/{name}.wav listo", round(start + (2 * VERSE_BEATS + 0.5) * BEAT, 1), "s de melodía")

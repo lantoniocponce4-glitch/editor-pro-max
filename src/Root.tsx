@@ -4,6 +4,7 @@ import {Composition, Folder} from "remotion";
 import {ShowcaseComposition} from "./compositions/Showcase";
 import {Saltarina, SALTARINA_DURATION} from "./compositions/Saltarina";
 import {Cumpleanos, CUMPLEANOS_DURATION} from "./compositions/Cumpleanos";
+import {CumpleanosReal, CUMPLEANOS_REAL_DURATION} from "./compositions/CumpleanosReal";
 
 // Social templates
 import {TikTokVideo} from "./templates/social/TikTokVideo";
@@ -26,6 +27,15 @@ export const RemotionRoot: React.FC = () => {
   return (
     <>
       <Folder name="Examples">
+        <Composition
+          id="CumpleanosReal"
+          component={CumpleanosReal}
+          durationInFrames={CUMPLEANOS_REAL_DURATION}
+          fps={30}
+          width={1080}
+          height={1920}
+          defaultProps={{nombre: "Cynia", mascota: "Bruno", music: true}}
+        />
         <Composition
           id="Cumpleanos"
           component={Cumpleanos}

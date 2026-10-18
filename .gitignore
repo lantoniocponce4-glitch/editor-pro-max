@@ -50,3 +50,4 @@ public/video-metadata.json
 
 # Foto personal del video de cumpleaños (no se publica)
 public/cumpleanos/foto.jpg
+public/cumpleanos/*.jpg
