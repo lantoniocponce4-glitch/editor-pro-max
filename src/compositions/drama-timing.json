@@ -1,0 +1,18 @@
+{
+  "_info": "Mini drama 'Amor en Fit Life' (30 fps). [inicio, duración] de cada escena en cuadros y momentos de golpe musical (cuadro absoluto). Lo usan DramaFitLife.tsx y scripts/drama-music.py.",
+  "fps": 30,
+  "scenes": {
+    "apertura": [0, 150],
+    "titulo": [150, 90],
+    "luis": [240, 150],
+    "cynia": [390, 150],
+    "miradas": [540, 180],
+    "letrero": [720, 150],
+    "momento": [870, 210],
+    "dialogo": [1080, 180],
+    "giro": [1260, 150],
+    "final": [1410, 120]
+  },
+  "hits": [150, 290, 440, 720, 870, 1280, 1320, 1410],
+  "heartbeats": [12, 40, 72, 100, 600, 628]
+}

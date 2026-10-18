@@ -5,6 +5,7 @@ import {ShowcaseComposition} from "./compositions/Showcase";
 import {Saltarina, SALTARINA_DURATION} from "./compositions/Saltarina";
 import {Cumpleanos, CUMPLEANOS_DURATION} from "./compositions/Cumpleanos";
 import {CumpleanosReal, CUMPLEANOS_REAL_DURATION} from "./compositions/CumpleanosReal";
+import {DramaFitLife, DRAMA_DURATION} from "./compositions/DramaFitLife";
 
 // Social templates
 import {TikTokVideo} from "./templates/social/TikTokVideo";
@@ -27,6 +28,15 @@ export const RemotionRoot: React.FC = () => {
   return (
     <>
       <Folder name="Examples">
+        <Composition
+          id="DramaFitLife"
+          component={DramaFitLife}
+          durationInFrames={DRAMA_DURATION}
+          fps={30}
+          width={1080}
+          height={1920}
+          defaultProps={{el: "Luis", ella: "Cynia", mascota: "Bruno", music: true}}
+        />
         <Composition
           id="CumpleanosReal"
           component={CumpleanosReal}

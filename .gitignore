@@ -51,3 +51,6 @@ public/video-metadata.json
 # Foto personal del video de cumpleaños (no se publica)
 public/cumpleanos/foto.jpg
 public/cumpleanos/*.jpg
+
+# Fotos personales del mini drama (no se publican)
+public/drama/*.jpg
